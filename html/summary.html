@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Summary</title>
+</head>
+<body>
+    {{#each data}}
+    <h2>{{this.date}}</h2>
+    {{#each this.products}}
+    <ul>
+        <h3>{{this.product}}</h3>
+        <ul>
+            {{#each this.tasks}}
+            <li>{{this}}</li>
+            {{/each}}
+        </ul>
+
+    </ul>
+    {{/each}}
+    {{/each}} 
+</body>
+</html>
