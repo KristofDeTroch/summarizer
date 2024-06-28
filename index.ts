@@ -1,5 +1,5 @@
 import { config } from "./config";
-import { Google } from "./google";
+import { Google } from "./auth/google";
 import * as oauth from "oauth4webapi";
 import * as os from "node:os";
 import * as path from "node:path";
@@ -7,14 +7,18 @@ import { startGeneration } from "./functions/generateSummary";
 import { constructTemplate } from "./functions/constructTemplate";
 
 const FILE_PATH = path.resolve("token.json");
-const address = "http://localhost:6969";
+const address = new URL("http://localhost:6969");
+const callbackURI = new URL("callback", address);
 const auth = Google({
   clientID: config.clientId!,
   clientSecret: config.secret!,
   scope:
     "openid https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar.events.readonly",
+  redirectURI: callbackURI.toString(),
+  accessType: "offline"
 });
-async function storeToken(token: oauth.OpenIDTokenEndpointResponse) {
+
+async function storeToken(token: oauth.TokenEndpointResponse) {
   const createdAt = new Date().toISOString();
   await Bun.write(FILE_PATH, JSON.stringify({ token, createdAt }));
 }
@@ -33,14 +37,13 @@ async function isTokenExpired() {
   }
   return false;
 }
-async function getToken() {
+async function getToken(): Promise<oauth.TokenEndpointResponse> {
   const { token } = await Bun.file(FILE_PATH).json();
 
   return token;
 }
 
-const callBackUri = new URL("callback", address);
-const { state, url } = await auth.authorize(callBackUri.toString());
+const { state, url } = await auth.authorize();
 if (await isTokenExpired()) {
   if (os.platform() === "darwin") {
     Bun.spawn(["open", url.toString()]);
@@ -53,13 +56,13 @@ if (await isTokenExpired()) {
 }
 
 Bun.serve({
-  port: 6969,
+  port: address.port,
   async fetch(request) {
     if (request.url.includes("callback")) {
       const res = await auth.callback(
         new URL(request.url, address),
         state,
-        callBackUri.toString()
+        callbackURI.toString()
       );
       await storeToken(res);
       // const nextRes = await startGeneration(res);

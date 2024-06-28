@@ -3,8 +3,9 @@ import { config } from "../config";
 import { getCalendar } from "./getCalendar";
 import { getCommits } from "./getCommits";
 import * as google from "@googleapis/calendar";
+import * as oauth from "oauth4webapi";
 
-export async function startGeneration({ since, until }: any, token: any) {
+export async function startGeneration({ since, until }: any, token: oauth.TokenEndpointResponse) {
   try {
     const auth = google.auth.fromJSON({
       type: "authorized_user",
